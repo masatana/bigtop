@@ -159,4 +159,13 @@
   </description>
 </property>
 <% end %>
+
+<% if (scope['::hadoop_cluster_node::cluster_components']).include? 'spark' -%>
+  <!-- Hive on Spark-->
+  <property>
+    <name>>spark.yarn.jars</name>
+    <value>${fs.default.name}/apps/spark-jars/*</value>
+  </property>
+<% end -%>
+
 </configuration>

@@ -340,4 +340,14 @@ total_jars += copyJars(fs,
     new File(TEZ_HOME), "",
     new Path(TEZ_APPS, "tez"))
 
+LOG.info("Now copying Jars into the DFS for spark ");
+LOG.info("This might take a few seconds...");
+
+def final SPARK_APPS = "/apps";
+def final SPARK_HOME = "/usr/lib/spark/";
+
+total_jars += copyJars(fs,
+    new File(SPARK_HOME, "jars/"), "",
+    new Path(SPARK_APPS, "spark-jars"))
+
 LOG.info("Total jars copied into the DFS : " + total_jars);

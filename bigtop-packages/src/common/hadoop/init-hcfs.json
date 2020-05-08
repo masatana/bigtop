@@ -94,6 +94,7 @@
     ["/apps",null,null,null],
     ["/apps/tez",null,null,null],
     ["/apps/tez/lib",null,null,null],
+    ["/apps/spark-jars",null,null,null],
     ["/user/zeppelin","777","zeppelin"]
  ],
   "user": [
