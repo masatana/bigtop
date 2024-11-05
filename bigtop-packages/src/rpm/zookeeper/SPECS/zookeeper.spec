@@ -249,6 +249,7 @@ fi
 %{bin_dir}/zookeeper-server-initialize
 %{bin_dir}/zookeeper-client
 %{bin_dir}/zookeeper-server-cleanup
+%{bin_dir}/zookeeper-rest
 %doc %{doc_zookeeper}
 %{man_dir}/man1/zookeeper.1.*
 

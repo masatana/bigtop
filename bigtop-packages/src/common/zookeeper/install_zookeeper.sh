@@ -201,6 +201,163 @@ EOF
   chmod 755 $wrapper
 done
 
+# zookeeper-rest
+
+wrapper=$PREFIX/$BIN_DIR/zookeeper-rest
+install -d -m 0755 `dirname $wrapper`
+cat > $wrapper <<EOF
+
+. /lib/lsb/init-functions
+BIGTOP_DEFAULTS_DIR=\${BIGTOP_DEFAULTS_DIR-/etc/default}
+[ -n "\${BIGTOP_DEFAULTS_DIR}" -a -r \${BIGTOP_DEFAULTS_DIR}/hadoop ] && . \${BIGTOP_DEFAULTS_DIR}/hadoop
+[ -n "\${BIGTOP_DEFAULTS_DIR}" -a -r \${BIGTOP_DEFAULTS_DIR}/zookeeper-rest ] && . \${BIGTOP_DEFAULTS_DIR}/zookeeper-rest
+
+# Autodetect JAVA_HOME if not defined
+. /usr/lib/bigtop-utils/bigtop-detect-javahome
+
+RETVAL_SUCCESS=0
+
+STATUS_RUNNING=0
+STATUS_DEAD=1
+STATUS_DEAD_AND_LOCK=2
+STATUS_NOT_RUNNING=3
+STATUS_OTHER_ERROR=102
+
+
+ERROR_PROGRAM_NOT_INSTALLED=5
+ERROR_PROGRAM_NOT_CONFIGURED=6
+
+
+RETVAL=0
+SLEEP_TIME=5
+PROC_NAME="java"
+
+DAEMON="zookeeper-rest"
+DESC="ZooKeeper REST Server"
+EXEC_PATH=""
+SVC_USER="zookeeper"
+DAEMON_FLAGS=""
+CONF_DIR="/etc/zookeeper/conf/rest"
+CONF_FILE=""
+LOGFILE=""
+PIDFILE="/run/zookeeper/zookeeper-rest-zookeeper.pid"
+LOCKDIR="/var/lock/subsys"
+LOCKFILE="\$LOCKDIR/zookeeper-rest"
+WORKING_DIR="/run/zookeeper"
+
+install -d -m 0755 -o zookeeper -g zookeeper /run/zookeeper 1>/dev/null 2>&1 || :
+[ -d "\$LOCKDIR" ] || install -d -m 0755 \$LOCKDIR 1>/dev/null 2>&1 || :
+start() {
+  log_success_msg "Starting \${DESC}: "
+
+  ZOOKEEPER_HOME=\${ZOOKEEPER_HOME:-/usr/lib/zookeeper}
+  CLASSPATH="\${ZOOKEEPER_HOME}/contrib/rest/*:\${ZOOKEEPER_HOME}/contrib/rest/lib/*"
+  CLASSPATH="\${ZOOKEEPER_HOME}/*:\${ZOOKEEPER_HOME}/lib/*:\${CONF_DIR}:\${CLASSPATH}"
+  CMD="\${JAVA_HOME}/bin/java -cp \${CLASSPATH} org.apache.zookeeper.server.jersey.RestMain"
+
+  LOG_FILE=/var/log/zookeeper/zookeeper-rest.out
+
+  runuser -s /bin/bash -c "nohup \${CMD} > \$LOG_FILE 2>&1 < /dev/null &"'echo \$! '"> \$PIDFILE" \$SVC_USER
+
+  [ \$RETVAL -eq \$RETVAL_SUCCESS ] && touch \$LOCKFILE
+  return \$RETVAL
+}
+stop() {
+  log_success_msg "Stopping \${DESC}: "
+  checkstatusofproc
+  if [ "\$?" = "\$STATUS_RUNNING" ] ; then
+    if [ -f \${PIDFILE} ]; then
+      PID=`cat \${PIDFILE}`
+      if [ -n \${PID} ]; then
+        kill -KILL \${PID} &>/dev/null
+      fi
+    fi
+    RETVAL=\$?
+  else
+    RETVAL=\$RETVAL_SUCCESS
+  fi
+
+  [ \$RETVAL -eq \$RETVAL_SUCCESS ] && rm -f \$LOCKFILE \$PIDFILE
+}
+restart() {
+  stop
+  start
+}
+
+checkstatusofproc(){
+  pidofproc -p \$PIDFILE \$PROC_NAME > /dev/null
+}
+
+checkstatus(){
+  checkstatusofproc
+  status=\$?
+  case "\$status" in
+    \$STATUS_RUNNING)
+      log_success_msg "\${DESC} is running"
+      ;;
+    \$STATUS_DEAD)
+      log_failure_msg "\${DESC} is dead and pid file exists"
+      ;;
+    \$STATUS_DEAD_AND_LOCK)
+      log_failure_msg "\${DESC} is dead and lock file exists"
+      ;;
+    \$STATUS_NOT_RUNNING)
+      log_failure_msg "\${DESC} is not running"
+      ;;
+    *)
+      log_failure_msg "\${DESC} status is unknown"
+      ;;
+  esac
+  return \$status
+}
+
+condrestart(){
+  [ -e \$LOCKFILE ] && restart || :
+}
+
+check_for_root() {
+  if [ \$(id -ur) -ne 0 ]; then
+    echo 'Error: root user required'
+    echo
+    exit 1
+  fi
+}
+
+service() {
+  case "\$1" in
+    start)
+      check_for_root
+      start
+      ;;
+    stop)
+      check_for_root
+      stop
+      ;;
+    status)
+      checkstatus
+      RETVAL=\$?
+      ;;
+    restart|force-reload)
+      check_for_root
+      restart
+      ;;
+    condrestart|try-restart)
+      check_for_root
+      condrestart
+      ;;
+    *)
+      echo \$"Usage: \$0 {start|stop|status|restart|try-restart|condrestart|force-reload}"
+      exit 1
+  esac
+}
+
+service "\$@"
+
+exit \$RETVAL
+EOF
+chmod 755 $wrapper
+
+
 # Copy in the docs
 install -d -m 0755 $PREFIX/$DOC_DIR
 cp -a $BUILD_DIR/docs/* $PREFIX/$DOC_DIR
