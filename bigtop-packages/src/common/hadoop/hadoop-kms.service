@@ -22,7 +22,7 @@ After=remote-fs.target
 
 [Service]
 User=kms
-Group=kms
+Group=hadoop
 Type=forking
 Restart=no
 TimeoutSec=5min
@@ -30,5 +30,5 @@ IgnoreSIGPIPE=no
 KillMode=process
 RemainAfterExit=no
 SuccessExitStatus=5 6
-ExecStart=/usr/bin/hdfs --config /etc/hadoop/conf --daemon start kms
-ExecStop=/usr/bin/hdfs --config /etc/hadoop/conf --daemon stop kms
+ExecStart=/usr/bin/hadoop --config /etc/hadoop/conf --daemon start kms
+ExecStop=/usr/bin/hadoop --config /etc/hadoop/conf --daemon stop kms
