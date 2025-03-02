@@ -14,4 +14,4 @@
 # limitations under the License.
 export HADOOP_CONF_DIR=/etc/hadoop/conf
 export HADOOP_LOG_DIR=/var/log/hadoop-kms
-export HADOOP_PID_DIR=/var/run/hadoop-kms
+export HADOOP_PID_DIR=/run/hadoop-kms
