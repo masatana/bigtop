@@ -57,7 +57,7 @@
 %define np_run_yarn /run/%{hadoop_name}-yarn
 %define np_run_hdfs /run/%{hadoop_name}-hdfs
 %define np_var_run_httpfs /var/run/%{hadoop_name}-httpfs
-%define np_var_run_kms /var/run/%{hadoop_name}-kms
+%define np_run_kms /run/%{hadoop_name}-kms
 %define np_var_run_mapreduce /var/run/%{hadoop_name}-mapreduce
 %define np_etc_hadoop /etc/%{hadoop_name}
 
@@ -191,6 +191,8 @@ Source42: hadoop-hdfs-journalnode.service
 Source43: hadoop-hdfs-zkfc.service
 Source44: hadoop-hdfs-dfsrouter.service
 Source45: hadoop-hdfs.tmpfile
+Source46: hadoop-kms.service
+Source46: hadoop-httpfs.service
 
 #BIGTOP_PATCH_FILES
 Buildroot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id} -u -n)
@@ -652,7 +654,7 @@ done
 # /var/run/*
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{np_var_run_mapreduce}
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{np_var_run_httpfs}
-%__install -d -m 0755 $RPM_BUILD_ROOT/%{np_var_run_kms}
+%__install -d -m 0755 $RPM_BUILD_ROOT/%{np_run_kms}
 # /run/*
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{np_run_yarn}
 %__install -d -m 0755 $RPM_BUILD_ROOT/%{np_run_hdfs}
@@ -694,28 +696,6 @@ chkconfig --add %{hadoop_name}-kms
 %preun
 if [ "$1" = 0 ]; then
   %{alternatives_cmd} --remove %{hadoop_name}-conf %{etc_hadoop}/conf.empty || :
-fi
-
-%preun httpfs
-if [ $1 = 0 ]; then
-  service %{hadoop_name}-httpfs stop > /dev/null 2>&1
-  chkconfig --del %{hadoop_name}-httpfs
-fi
-
-%postun httpfs
-if [ $1 -ge 1 ]; then
-  service %{hadoop_name}-httpfs condrestart >/dev/null 2>&1
-fi
-
-%preun kms
-if [ $1 = 0 ]; then
-  service %{hadoop_name}-kms stop > /dev/null 2>&1
-  chkconfig --del %{hadoop_name}-kms
-fi
-
-%postun kms
-if [ $1 -ge 1 ]; then
-  service %{hadoop_name}-kms condrestart >/dev/null 2>&1
 fi
 
 %files yarn
@@ -826,7 +806,7 @@ fi
 %config(noreplace) %{etc_hadoop}/conf.empty/kms-site.xml
 %config(noreplace) %{etc_default}/%{hadoop_name}-kms
 %{initd_dir}/%{hadoop_name}-kms
-%attr(0775,kms,kms) %{np_var_run_kms}
+%attr(0775,kms,kms) %{np_run_kms}
 %attr(0775,kms,kms) %{np_var_log_kms}
 %attr(0775,kms,kms) %{var_lib_kms}
 
@@ -880,6 +860,8 @@ fi
 %systemd_macro hdfs-journalnode
 %systemd_macro hdfs-datanode
 %systemd_macro hdfs-dfsrouter
+%systemd_macro hadoop-kms
+%systemd_macro hadoop-httpfs
 
 # Pseudo-distributed Hadoop installation
 %post conf-pseudo
